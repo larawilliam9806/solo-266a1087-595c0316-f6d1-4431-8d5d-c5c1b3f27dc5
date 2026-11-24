@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>按凭据号查证寄存器来源</title>
+  <style>
+    body { font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+           margin: 2rem auto; max-width: 56rem; padding: 0 1rem; color: #1f2933; }
+    h1 { font-size: 1.4rem; }
+    section { border: 1px solid #cbd2d9; border-radius: 8px; padding: 1rem 1.25rem;
+              margin: 1rem 0; background: #f8fafc; }
+    h2 { font-size: 1.05rem; margin-top: 0; }
+    label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.9rem; }
+    input[type=text], input[type=number] { width: 100%; box-sizing: border-box;
+            padding: 0.45rem; border: 1px solid #9aa5b1; border-radius: 6px; }
+    button { margin-top: 0.8rem; padding: 0.5rem 1.1rem; border: 0; border-radius: 6px;
+             background: #2563eb; color: #fff; cursor: pointer; }
+    a { color: #2563eb; }
+    .err { background: #fee2e2; border: 1px solid #dc2626; padding: 0.7rem 1rem;
+           border-radius: 6px; }
+    .card { background: #fff; border: 1px solid #cbd2d9; border-radius: 8px;
+            padding: 1rem 1.25rem; margin-top: 1rem; }
+    .value { font-size: 1.6rem; font-weight: 700; color: #1d4ed8; }
+    .empty { color: #52606d; }
+    ul.branches { font-size: 1.05rem; line-height: 1.8; }
+    code { background: #e4e7eb; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .hint { font-size: 0.85rem; color: #52606d; }
+  </style>
+</head>
+<body>
+  <h1>按凭据号查证 · 某寄存器最大值的报出馆</h1>
+  <p><a href="{{ url_for('index') }}">← 返回报送页</a></p>
+
+  <section>
+    <h2>输入凭据号与寄存器位置</h2>
+    <p class="hint">凭据号来自“带凭据号合并 JSON”下载文件中的
+      <code>credential_id</code> 字段；寄存器位置为 <code>0～127</code>。
+      查证结果只读取凭据留存的不可变快照，不受后续换报/撤回影响。值为 0 时馆号名单为空。</p>
+    <form action="{{ url_for('lookup_page') }}" method="get">
+      <label>凭据号
+        <input type="text" name="credential_id" required
+               value="{{ credential_id or '' }}" placeholder="例如 4839201746550123"></label>
+      <label>寄存器位置（0～127）
+        <input type="number" name="position" min="0" max="127" step="1" required
+               value="{{ position if position is not none else '' }}" placeholder="例如 0"></label>
+      <button type="submit">查证</button>
+    </form>
+  </section>
+
+  {% if error %}
+    <div class="err">查证失败：{{ error }}</div>
+  {% endif %}
+
+  {% if result %}
+  <section class="card">
+    <h2>查证结果（凭据 {{ result.credential_id }} 出具当时）</h2>
+    <p>月份 / 资源号：<code>{{ result.month }}</code> / <code>{{ result.resource }}</code>
+       ｜ 位置：<code>{{ result.position }}</code>
+       ｜ 出具时间：{{ result.issued_at }}</p>
+    <p>当时该寄存器的最大值：<span class="value">{{ result.value }}</span></p>
+    {% if result.branches %}
+      <p>报出该值的馆号（共 {{ result.branches|length }} 个）：</p>
+      <ul class="branches">
+        {% for branch in result.branches %}<li><code>{{ branch }}</code></li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">该位置当时的值为 0，没有任何分馆报出非零最大值（空名单）。</p>
+    {% endif %}
+    <p class="hint">程序化调用可直接请求
+      <code>GET /credentials/{{ result.credential_id }}/{{ result.position }}</code>
+      或 <code>GET /lookup?credential_id=…&amp;position=…&amp;format=json</code>。</p>
+  </section>
+  {% endif %}
+</body>
+</html>

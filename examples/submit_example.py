@@ -39,12 +39,25 @@ def main(base_url: str, month: str, resource: str, branch: str) -> None:
     print(f"HTTP {resp.status} 报送成功，合并后非零寄存器数：",
           sum(1 for x in result["merged"] if x))
 
-    # 下载合并摘要
+    # 下载合并摘要（该入口同时出具凭据，返回体带 credential_id）
     with urllib.request.urlopen(
         f"{base_url}/merged/{month}/{resource}/download", timeout=30
     ) as resp:
         merged = json.loads(resp.read().decode("utf-8"))
     print("下载合并摘要：", json.dumps(merged, ensure_ascii=False)[:120], "...")
+
+    # 用凭据号 + 一个非零寄存器位置，回看当时报出该最大值的馆号名单
+    credential_id = merged.get("credential_id")
+    position = next((i for i, v in enumerate(merged["registers"]) if v), 0)
+    if credential_id:
+        with urllib.request.urlopen(
+            f"{base_url}/credentials/{credential_id}/{position}", timeout=30
+        ) as resp:
+            provenance = json.loads(resp.read().decode("utf-8"))
+        print(
+            f"凭据 {credential_id} 位置 {position} 的最大值="
+            f"{provenance['value']}，报出馆={provenance['branches']}"
+        )
 
 
 if __name__ == "__main__":

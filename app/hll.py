@@ -59,6 +59,26 @@ def validate_identifier(field: str, value: object) -> str:
     return value
 
 
+def validate_position(value: object) -> int:
+    """校验寄存器位置：0～127 的整数（兼容数字字符串，bool 除外）。"""
+    if isinstance(value, bool):
+        raise ValidationError("position 必须是 0～127 的整数")
+    if isinstance(value, int):
+        position = value
+    elif isinstance(value, str):
+        try:
+            position = int(value.strip())
+        except ValueError as exc:
+            raise ValidationError("position 必须是 0～127 的整数") from exc
+    else:
+        raise ValidationError("position 必须是 0～127 的整数")
+    if not 0 <= position < REGISTER_COUNT:
+        raise ValidationError(
+            f"position={position} 超出允许范围 0～{REGISTER_COUNT - 1}"
+        )
+    return position
+
+
 def validate_registers(value: object) -> list[int]:
     if not isinstance(value, list) or len(value) != REGISTER_COUNT:
         raise ValidationError(f"registers 必须是长度恰好为 {REGISTER_COUNT} 的数组")

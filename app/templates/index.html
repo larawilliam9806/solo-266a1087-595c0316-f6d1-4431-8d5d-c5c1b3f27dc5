@@ -59,7 +59,8 @@
 
   <section>
     <h2>3. 下载已保存的合并摘要</h2>
-    <p class="hint">按月份和资源号下载逐位置取最大值后的合并 JSON（无报送记录时返回 404）。</p>
+    <p class="hint">按月份和资源号下载逐位置取最大值后的合并 JSON（无报送记录时返回 404）。
+      该入口现在也会出具凭据并在 JSON 中附带 <code>credential_id</code>。</p>
     <form id="dl-form" onsubmit="event.preventDefault();
         var m=this.month.value.trim(), r=this.resource.value.trim();
         window.location='{{ url_for('download_merged', month='__M__', resource='__R__') }}'
@@ -67,6 +68,35 @@
       <label>月份（YYYY-MM）<input type="text" name="month" required placeholder="2026-11"></label>
       <label>资源号<input type="text" name="resource" required placeholder="ER-0001"></label>
       <button class="tertiary" type="submit">下载合并摘要</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>4. 下载带凭据号的合并 JSON（出具凭据）</h2>
+    <p class="hint">按月份和资源号出具凭据：下载的 JSON 带 <code>credential_id</code>，
+      服务端在同一事务内留存当时 128 个寄存器各自的最大值与全部报出馆号。
+      即使之后最大值不变而报出该值的馆发生更换，本凭据仍可按原样查证。
+      凭据保存失败时不会返回带号文件。</p>
+    <form id="cred-form" onsubmit="event.preventDefault();
+        var m=this.month.value.trim(), r=this.resource.value.trim();
+        window.location='{{ url_for('credential_download', month='__M__', resource='__R__') }}'
+          .replace('__M__', encodeURIComponent(m)).replace('__R__', encodeURIComponent(r));">
+      <label>月份（YYYY-MM）<input type="text" name="month" required placeholder="2026-11"></label>
+      <label>资源号<input type="text" name="resource" required placeholder="ER-0001"></label>
+      <button type="submit">出具凭据并下载带号 JSON</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>5. 按凭据号 + 寄存器位置查证来源馆</h2>
+    <p class="hint">输入下载文件中的 <code>credential_id</code> 与寄存器位置
+      （<code>0～127</code>），可查凭据出具当时该位置的最大值以及报出该值的所有馆号；
+      值为 0 时显示空名单。查证只读不可变快照，不读取各馆现行摘要。</p>
+    <form action="{{ url_for('lookup_page') }}" method="get">
+      <label>凭据号<input type="text" name="credential_id" required placeholder="例如 4839201746550123"></label>
+      <label>寄存器位置（0～127）
+        <input type="number" name="position" min="0" max="127" step="1" required placeholder="例如 0"></label>
+      <button class="tertiary" type="submit">查证当时值与馆号名单</button>
     </form>
   </section>
 </body>
